@@ -1,7 +1,7 @@
 const EventDispacher = require('./utils/event_dispatcher');
 
 
-const STEP_TIME = 1000;
+const STEP_TIME = 500;
 let paused = false;
 let stack;
 let timeoutInterval;

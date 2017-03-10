@@ -1,7 +1,10 @@
 const vm = require('./virtual_machine');
-const environment = require('./environment');
+// const environment = require('./environment');
+
+const environment = require('./environments/turtle/turtle-environment');
+
 const parser = require('./parser');
-const level = require('./levels/level_1');
+// const level = require('./levels/level_1');
 const model = require('./model');
 const stageView = require('./stage_view');
 
@@ -53,29 +56,82 @@ function init(){
   });
 
 
+
+
+
+
   stageView.init(400, 400);
-  reset();
-  window.environment = environment;
+
+
+
+  // let loadLevelButton = document.getElementById('load-level');
+  // loadLevelButton.addEventListener('click', () => { loadLevel();});
+
+  let levelSelect = document.getElementById('level-select');
+  levelSelect.addEventListener('change', loadLevel);
 
   environment.sayOutput = sayOutput;
-
   environment.addEventListener(environment.GAME_ERROR, pause);
   environment.addEventListener(environment.GAME_COMPLETE, pause);
 
 
   let goButton = document.getElementById('go-button');
-  // let pauseButton = document.getElementById('pause-button');
   let resetButton = document.getElementById('reset-button');
-
   goButton.addEventListener('click', run);
-  // pauseButton.addEventListener('click', pause);
   resetButton.addEventListener('click', reset);
 
-  restoreCode('level1');
+
+  // loadLevel(envName, lvlName);
+  setDefaultLevel();
+  loadLevel();
 
   lastTime = new Date().getTime();
   animate();
+}
 
+let environmentName;
+let levelName;
+let level;
+
+function setDefaultLevel(){
+  console.log('setDefaultLevel');
+  let lastLevel = localStorage['lastLevel'];
+
+  if(!lastLevel){
+    return;
+  }
+
+  lastLevel = lastLevel.split(':');
+  if(lastLevel.length != 2){
+    return;
+  }
+
+  document.getElementById('environment-select').value = lastLevel[0];
+  document.getElementById('level-select').value = lastLevel[1];  
+}
+
+function setSelectValue(id, value){
+  let select = document.getElementById(id);
+  select.childNodes.forEach((cn) => {
+    console.log(cn);
+  })
+}
+
+
+function loadLevel(){
+  console.log('load');
+  environmentName = document.getElementById('environment-select').value;
+  levelName = document.getElementById('level-select').value;
+
+  stageView.clear();
+  // 
+  level = environment.levels[levelName];
+  restoreCode();
+
+  reset();
+
+  // Set the last level
+  localStorage.setItem('lastLevel', environmentName + ':' + levelName);
 }
 
 function run(){
@@ -91,7 +147,7 @@ function run(){
     // console.log(program);
     vm.run(program, environment);  
 
-    saveCode('level1', programString)
+    saveCode(programString)
   // }
 }
 
@@ -114,20 +170,20 @@ function reset(){
 function animate(timestamp) {  
   let delta = Math.max(0, timestamp - lastTime) || 0;
   lastTime = timestamp;
-  requestAnimationFrame(animate);
   model.update(delta);
   stageView.update(model, delta);
+
+
+  requestAnimationFrame(animate);
 }
 
-function saveCode(level, code){
-  localStorage.setItem('level:' + level, code);
+function saveCode(code){
+  localStorage.setItem(environmentName + '-' + levelName, code);
 }
 
-function restoreCode(level){
-  let code = localStorage['level:' + level];
-  if(code){
-    codeEntry.value = code; 
-  }
+function restoreCode(){
+  let code = localStorage[environmentName + '-' + levelName];
+  codeEntry.value = code || ''; 
 }
 
 document.body.onload = init;

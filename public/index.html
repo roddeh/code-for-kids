@@ -3,11 +3,45 @@
   <head>
     <style type="text/css">
 
+    /*
+
+
+    Palette
+    
+    Beige : #EDE4D4;
+    Blue :  #7DC9D3;
+    Red:    #E55251;
+    Green:  #6CB681;
+    Yellow: #F9D838;
+
+    */
+
      body, html {
         margin: 0;
         overflow: hidden;
         width: 100%;
         height: 100%;
+        font-family: Helvetica;
+
+        background-color: #EDE4D4;
+        color: #FFFFFF;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      header {
+        padding: 10px;
+        width: 100%;
+        height: 50px;
+        position: relative;
+        /*background-color: red;*/
+        background-color: #7DC9D3;
+      }
+
+      h1 {
+        margin: 0;
       }
 
       a {
@@ -25,13 +59,18 @@
       #stage {
         width: 400px;
         height: 400px;
-        background-color: #66C;
+        background-color: transparent;
         vertical-align: top;
       }
 
       #code-panel {
         width: 500px;
         position: relative;
+        height:100%;
+      }
+
+      #game-panel {
+        width: 500px;
       }
 
       #code-entry {
@@ -58,7 +97,7 @@
       #line-highlight {
         width: 100%;
         height: 23px;
-        background-color: #6C6;
+        background-color: #6CB681;
         position: absolute;
         visibility: hidden;
       }
@@ -67,17 +106,22 @@
       #line-highlight-caller {
         width: 100%;
         height: 23px;
-        background-color: #CC3;
+        background-color: #F9D838;
         position: absolute;
         visibility: hidden;
       }
 
-      button {
+      #go-button, #reset-button {
         display: block;
         width: 100%;
         margin-top: 10px;
         height: 30px;
         font-size: 20px;
+
+        background-color: #6CB681;
+        color: #FFFFFF;
+
+        border: none;
       }
 
       #go-button {
@@ -90,8 +134,24 @@
         top:550px;
       }
 
+      .inline-block {
+        display: inline-block;
+      }
+
       .float-left {
         float: left;
+      }
+
+      .float-right {
+        float: right;
+      }
+
+      .align-left {
+        text-align: left;
+      }
+
+      .align-right {
+        text-align: right;
       }
 
       .image-preloader {
@@ -102,6 +162,8 @@
         padding: 5px;
         font-family: "Marker Felt";
         font-size: 30px;
+        color: #6CB681;
+        text-align: center;
       }
 
     </style>
@@ -109,10 +171,29 @@
   <body>
     <image id="turtle-image" class="image-preloader", src="/images/turtle.png"></image>
     <image id="treasure-image" class="image-preloader", src="/images/treasure.png"></image>
-    <div id="game-panel" class="float-left">
-      <canvas id="stage"></canvas>
-      <div id="say-output"></div>
-    </div>
+
+    <header>
+      <h1 class='float-left'>Kids Script</h1>
+      <div class='float-right'>
+        <label>Game Type</label>
+        <select id="environment-select">
+          <option value="turtle">Turtle &amp; the Treasure</option>
+        </select>
+        <label>Level</label>
+        <select id="level-select">
+          <option value="level_1">Level 1</option>
+          <option value="level_2">Level 2</option>
+          <option value="level_3">Level 3</option>
+          <option value="level_4">Level 4</option>
+          <option value="level_5">Level 5</option>
+          <option value="level_6">Level 6</option>
+          <option value="level_7">Level 7</option>
+          <option value="level_8">Level 8</option>
+          <option value="level_9">Level 9</option>
+          <option value="level_10">Level 10</option>
+        </select>
+      </div>
+    </header>
     <div id="code-panel" class="float-left">
       <div id="code-background"></div>
       <div id="line-highlight"></div>
@@ -120,6 +201,10 @@
       <textarea id="code-entry"></textarea>
       <button id="go-button">GO</button>
       <button id="reset-button">RESET</button>
+    </div>
+    <div id="game-panel" class="float-left">
+      <canvas id="stage"></canvas>
+      <div id="say-output"></div>
     </div>
     <script type="text/javascript" src="/js/client.js"></script>
   </body>

@@ -47,11 +47,14 @@
 	"use strict";
 	
 	var vm = __webpack_require__(1);
-	var environment = __webpack_require__(2);
-	var parser = __webpack_require__(3);
-	var level = __webpack_require__(4);
-	var model = __webpack_require__(5);
-	var stageView = __webpack_require__(6);
+	// const environment = require('./environment');
+	
+	var environment = __webpack_require__(5);
+	
+	var parser = __webpack_require__(2);
+	// const level = require('./levels/level_1');
+	var model = __webpack_require__(3);
+	var stageView = __webpack_require__(4);
 	
 	var lastTime = undefined;
 	
@@ -99,26 +102,72 @@
 	  });
 	
 	  stageView.init(400, 400);
-	  reset();
-	  window.environment = environment;
+	
+	  // let loadLevelButton = document.getElementById('load-level');
+	  // loadLevelButton.addEventListener('click', () => { loadLevel();});
+	
+	  var levelSelect = document.getElementById("level-select");
+	  levelSelect.addEventListener("change", loadLevel);
 	
 	  environment.sayOutput = sayOutput;
-	
 	  environment.addEventListener(environment.GAME_ERROR, pause);
 	  environment.addEventListener(environment.GAME_COMPLETE, pause);
 	
 	  var goButton = document.getElementById("go-button");
-	  // let pauseButton = document.getElementById('pause-button');
 	  var resetButton = document.getElementById("reset-button");
-	
 	  goButton.addEventListener("click", run);
-	  // pauseButton.addEventListener('click', pause);
 	  resetButton.addEventListener("click", reset);
 	
-	  restoreCode("level1");
+	  // loadLevel(envName, lvlName);
+	  setDefaultLevel();
+	  loadLevel();
 	
 	  lastTime = new Date().getTime();
 	  animate();
+	}
+	
+	var environmentName = undefined;
+	var levelName = undefined;
+	var level = undefined;
+	
+	function setDefaultLevel() {
+	  console.log("setDefaultLevel");
+	  var lastLevel = localStorage.lastLevel;
+	
+	  if (!lastLevel) {
+	    return;
+	  }
+	
+	  lastLevel = lastLevel.split(":");
+	  if (lastLevel.length != 2) {
+	    return;
+	  }
+	
+	  document.getElementById("environment-select").value = lastLevel[0];
+	  document.getElementById("level-select").value = lastLevel[1];
+	}
+	
+	function setSelectValue(id, value) {
+	  var select = document.getElementById(id);
+	  select.childNodes.forEach(function (cn) {
+	    console.log(cn);
+	  });
+	}
+	
+	function loadLevel() {
+	  console.log("load");
+	  environmentName = document.getElementById("environment-select").value;
+	  levelName = document.getElementById("level-select").value;
+	
+	  stageView.clear();
+	  //
+	  level = environment.levels[levelName];
+	  restoreCode();
+	
+	  reset();
+	
+	  // Set the last level
+	  localStorage.setItem("lastLevel", environmentName + ":" + levelName);
 	}
 	
 	function run() {
@@ -134,7 +183,7 @@
 	  // console.log(program);
 	  vm.run(program, environment);
 	
-	  saveCode("level1", programString);
+	  saveCode(programString);
 	}
 	
 	function pause() {
@@ -156,20 +205,19 @@
 	function animate(timestamp) {
 	  var delta = Math.max(0, timestamp - lastTime) || 0;
 	  lastTime = timestamp;
-	  requestAnimationFrame(animate);
 	  model.update(delta);
 	  stageView.update(model, delta);
+	
+	  requestAnimationFrame(animate);
 	}
 	
-	function saveCode(level, code) {
-	  localStorage.setItem("level:" + level, code);
+	function saveCode(code) {
+	  localStorage.setItem(environmentName + "-" + levelName, code);
 	}
 	
-	function restoreCode(level) {
-	  var code = localStorage["level:" + level];
-	  if (code) {
-	    codeEntry.value = code;
-	  }
+	function restoreCode() {
+	  var code = localStorage[environmentName + "-" + levelName];
+	  codeEntry.value = code || "";
 	}
 	
 	document.body.onload = init;
@@ -183,7 +231,7 @@
 	
 	var EventDispacher = __webpack_require__(7);
 	
-	var STEP_TIME = 1000;
+	var STEP_TIME = 500;
 	var paused = false;
 	var stack = undefined;
 	var timeoutInterval = undefined;
@@ -320,84 +368,7 @@
 
 	"use strict";
 	
-	var EventDispatcher = __webpack_require__(7);
-	
-	var LAND = "L";
-	var WATER = "W";
-	var VOID = "0";
-	
-	function move(target, distance, material, errorMessage) {
-	  var dir = target.orientation === 0 || target.orientation === 2 ? "y" : "x";
-	  var mod = target.orientation === 0 || target.orientation === 3 ? -1 : 1;
-	  var movesToMake = distance * mod;
-	
-	  while (movesToMake !== 0) {
-	    movesToMake -= mod;
-	
-	    var nextPos = {
-	      x: target.x,
-	      y: target.y };
-	
-	    nextPos[dir] += mod;
-	
-	    var tileType = environment.model.getTileAt(nextPos.x, nextPos.y);
-	
-	    if (tileType === material) {
-	      target[dir] += mod;
-	    } else {
-	      environment.say(errorMessage);
-	      environment.dispatchEvent(environment.GAME_ERROR);
-	      return;
-	    }
-	
-	    if (target.x === environment.model.treasure.x && target.y === environment.model.treasure.y) {
-	      environment.dispatchEvent(environment.GAME_COMPLETE);
-	      environment.say("I FOUND THE TREASURE");
-	    }
-	  }
-	}
-	
-	var environment = {
-	
-	  left: -1,
-	  right: 1,
-	
-	  GAME_ERROR: "gameError",
-	  GAME_COMPLETE: "gameComplete",
-	
-	  walk: function walk(target, distance) {
-	    move(target, distance, LAND, "I can only walk on land");
-	  },
-	
-	  swim: function swim(target, distance) {
-	    move(target, distance, WATER, "I can only swim in the water");
-	  },
-	
-	  turn: function turn(target, direction) {
-	    target.orientation += direction % 4;
-	    if (target.orientation < 0) {
-	      target.orientation = 4 + target.orientation;
-	    }
-	    target.orientation = target.orientation % 4;
-	  },
-	
-	  say: function say(str, p1, p2, p3) {
-	    console.log("SAY", str, p1, p2, p3);
-	    environment.sayOutput.innerHTML = str;
-	  }
-	};
-	
-	EventDispatcher.init(environment);
-	
-	module.exports = environment;
-
-/***/ },
-/* 3 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	var trim = __webpack_require__(8);
+	var trim = __webpack_require__(6);
 	
 	function parseCommand(command) {
 	
@@ -527,33 +498,12 @@
 	module.exports = parser;
 
 /***/ },
-/* 4 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	
-	var layout = "\nLL000000\n0LL00000\n00LL0000\n000LWLWL\n0000000L\n0000000L\n0000000L\n0000000L\n";
-	
-	module.exports = {
-	  tileSize: 50,
-	  layout: layout,
-	  turtle: {
-	    x: 0,
-	    y: 0,
-	    orientation: 1
-	  },
-	  treasure: {
-	    x: 7,
-	    y: 7 }
-	};
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	
-	var clone = __webpack_require__(9);
+	var clone = __webpack_require__(8);
 	
 	function parseLayout(layoutString) {
 	  return layoutString.split("\n").filter(function (l) {
@@ -601,7 +551,7 @@
 	module.exports = model;
 
 /***/ },
-/* 6 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -610,6 +560,7 @@
 	// const debugBlock = require('./debug_block');
 	
 	var ctx = undefined;
+	var canvas = undefined;
 	var w = undefined;
 	var h = undefined;
 	
@@ -647,13 +598,17 @@
 	var stageView = {
 	
 	  init: function init(w, h) {
-	    var canvas = document.getElementById("stage");
+	    canvas = document.getElementById("stage");
 	    canvas.width = w;
 	    canvas.height = h;
 	    ctx = canvas.getContext("2d");
 	
 	    turtleImage = document.getElementById("turtle-image");
 	    treasureImage = document.getElementById("treasure-image");
+	  },
+	
+	  clear: function clear() {
+	    ctx.clearRect(0, 0, canvas.width, canvas.height);
 	  },
 	
 	  update: function update(model) {
@@ -673,6 +628,120 @@
 	};
 	
 	module.exports = stageView;
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var EventDispatcher = __webpack_require__(7);
+	
+	var levels = {
+	  level_1: __webpack_require__(9),
+	  level_2: __webpack_require__(10),
+	  level_3: __webpack_require__(11),
+	  level_4: __webpack_require__(12),
+	  level_5: __webpack_require__(13),
+	  level_6: __webpack_require__(14),
+	  level_7: __webpack_require__(15),
+	  level_8: __webpack_require__(16),
+	  level_9: __webpack_require__(17),
+	  level_10: __webpack_require__(18) };
+	
+	var LAND = "L";
+	var WATER = "W";
+	var VOID = "0";
+	
+	function move(target, distance, material, errorMessage) {
+	  var dir = target.orientation === 0 || target.orientation === 2 ? "y" : "x";
+	  var mod = target.orientation === 0 || target.orientation === 3 ? -1 : 1;
+	  var movesToMake = distance * mod;
+	
+	  while (movesToMake !== 0) {
+	    movesToMake -= mod;
+	
+	    var nextPos = {
+	      x: target.x,
+	      y: target.y };
+	
+	    nextPos[dir] += mod;
+	
+	    var tileType = environment.model.getTileAt(nextPos.x, nextPos.y);
+	
+	    if (tileType === material) {
+	      target[dir] += mod;
+	    } else {
+	      environment.say(errorMessage);
+	      environment.dispatchEvent(environment.GAME_ERROR);
+	      return;
+	    }
+	
+	    if (target.x === environment.model.treasure.x && target.y === environment.model.treasure.y) {
+	      environment.dispatchEvent(environment.GAME_COMPLETE);
+	      environment.say("I FOUND THE TREASURE");
+	    }
+	  }
+	}
+	
+	var environment = {
+	
+	  left: -1,
+	  right: 1,
+	
+	  GAME_ERROR: "gameError",
+	  GAME_COMPLETE: "gameComplete",
+	
+	  levels: levels,
+	
+	  walk: function walk(target, distance) {
+	    move(target, distance, LAND, "I can only walk on land");
+	  },
+	
+	  swim: function swim(target, distance) {
+	    move(target, distance, WATER, "I can only swim in the water");
+	  },
+	
+	  turn: function turn(target, direction) {
+	    target.orientation += direction % 4;
+	    if (target.orientation < 0) {
+	      target.orientation = 4 + target.orientation;
+	    }
+	    target.orientation = target.orientation % 4;
+	  },
+	
+	  say: function say(str, p1, p2, p3) {
+	    console.log("SAY", str, p1, p2, p3);
+	    environment.sayOutput.innerHTML = str;
+	  }
+	};
+	
+	EventDispatcher.init(environment);
+	
+	module.exports = environment;
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	module.exports = function (str) {
+	  var leading = 0;
+	  var trailing = str.length;
+	
+	  var i = 0;
+	  while (str.charAt(i++) === " ") {
+	    leading++;
+	  }
+	
+	  i = str.length - 1;
+	  while (str.charAt(i--) === " ") {
+	    trailing--;
+	  }
+	
+	  return str.substr(leading, trailing - leading);
+	};
 
 /***/ },
 /* 7 */
@@ -711,21 +780,13 @@
 
 	"use strict";
 	
-	module.exports = function (str) {
-	  var leading = 0;
-	  var trailing = str.length;
+	module.exports = function (subject) {
+	  var target = arguments[1] === undefined ? {} : arguments[1];
 	
-	  var i = 0;
-	  while (str.charAt(i++) === " ") {
-	    leading++;
+	  for (var i in subject) {
+	    target[i] = subject[i];
 	  }
-	
-	  i = str.length - 1;
-	  while (str.charAt(i--) === " ") {
-	    trailing--;
-	  }
-	
-	  return str.substr(leading, trailing - leading);
+	  return target;
 	};
 
 /***/ },
@@ -734,13 +795,208 @@
 
 	"use strict";
 	
-	module.exports = function (subject) {
-	  var target = arguments[1] === undefined ? {} : arguments[1];
+	var layout = "\nLLLL\n000L\n000L\n000L\n";
 	
-	  for (var i in subject) {
-	    target[i] = subject[i];
-	  }
-	  return target;
+	module.exports = {
+	  tileSize: 100,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 3,
+	    y: 3 }
+	};
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLLWWL\n0000W\n0000W\n0000L\n0000L\n";
+	
+	module.exports = {
+	  tileSize: 80,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 4,
+	    y: 4 }
+	};
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLLLLL\nLWWWL\nLWLWL\nLWWWL\nLLLLL\n";
+	
+	module.exports = {
+	  tileSize: 80,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 2,
+	    y: 2 }
+	};
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLL000000\n0LL00000\n00LL0000\n000LL000\n0000LL00\n00000LL0\n000000LL\n0000000L\n";
+	
+	module.exports = {
+	  tileSize: 50,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 7,
+	    y: 7 }
+	};
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLL000000\n0LL00000\n00LL0000\n000LWLWL\n0000000L\n0000000L\n0000000L\n0000000L\n";
+	
+	module.exports = {
+	  tileSize: 50,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 7,
+	    y: 7 }
+	};
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLWLWL00000000\n0000W00000000\n0000L00000000\n0000W00000000\n0000LWLWL0000\n00000000L0000\n00000000L0000\n00000000W0000\n00000000L0000\n00000000W0000\n00000000LWLWL\n000000000000L\n000000000000L\n";
+	
+	module.exports = {
+	  tileSize: 30,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 12,
+	    y: 12 }
+	};
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLWLWL00000L00\n0000W00000W00\n00LWL00000L00\n00W0000000W00\n00L0000000L00\n00W0000000W00\n00L0LWLWLWL00\n00W0W00000000\n00L0L00000000\n00W0W00000000\n00LWL00000000\n0000000000000\n000000000000)\n";
+	
+	module.exports = {
+	  tileSize: 30,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 10,
+	    y: 0 }
+	};
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLL00000000000\n0LLL000000000\n000L000000000\n000LLLL000000\n000000L000000\n000000L000000\n000000LL00000\n0000000LLL000\n000000000L000\n000000000LLLL\n000000000000L\n000000000000L\n000000000000L\n";
+	
+	module.exports = {
+	  tileSize: 30,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 12,
+	    y: 12 }
+	};
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLLLL0LLLL0LLLL\nW00L0L00L0L00L\nL0LL0L0LL0L0LL\nW0L00L0L00L0L0\nL0LL0L0LL0L0LL\nW00L0L00L0W00L\nL0LL0L0LL0L0LL\nW0L00L0L00W0L0\nL0LL0L0LLLL0LL\nW00L0L0000000L\nL0LL0L000000LL\nW0L00L000000L0\nL0LLLL000000LL\n";
+	
+	module.exports = {
+	  tileSize: 25,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 12,
+	    orientation: 0
+	  },
+	  treasure: {
+	    x: 13,
+	    y: 12 }
+	};
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	
+	var layout = "\nLWLWL00000L00\n0000W00000W00\n00LWL00000L00\n00W0000000W00\n00L0000000L00\n00W0000000W00\n00L0LWLWLWL00\n00W0W00000000\n00L0L00000000\n00W0W00000000\n00LWL00000000\n0000000000000\n000000000000)\n";
+	
+	module.exports = {
+	  tileSize: 30,
+	  layout: layout,
+	  turtle: {
+	    x: 0,
+	    y: 0,
+	    orientation: 1
+	  },
+	  treasure: {
+	    x: 10,
+	    y: 0 }
 	};
 
 /***/ }

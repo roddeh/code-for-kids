@@ -1,4 +1,18 @@
-let EventDispatcher = require('./utils/event_dispatcher');
+let EventDispatcher = require('../../utils/event_dispatcher');
+
+const levels = {
+  'level_1':require('./levels/level_1'),
+  'level_2':require('./levels/level_2'),
+  'level_3':require('./levels/level_3'),
+  'level_4':require('./levels/level_4'),
+  'level_5':require('./levels/level_5'),
+  'level_6':require('./levels/level_6'),
+  'level_7':require('./levels/level_7'),
+  'level_8':require('./levels/level_8'),
+  'level_9':require('./levels/level_9'),
+  'level_10':require('./levels/level_10'),
+}
+
 
 const LAND = 'L';
 const WATER = 'W';
@@ -46,6 +60,8 @@ let environment = {
 
   GAME_ERROR: 'gameError',
   GAME_COMPLETE: 'gameComplete',
+
+  levels,
 
   walk(target, distance){
     move(target, distance, LAND, 'I can only walk on land');

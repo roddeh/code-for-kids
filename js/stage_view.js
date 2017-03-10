@@ -4,6 +4,7 @@
 // const debugBlock = require('./debug_block');
 
 let ctx;
+let canvas;
 let w;
 let h;
 
@@ -43,13 +44,17 @@ function drawAtPointWithRotation(x, y, rotation, drawMethod){
 const stageView = {
 
   init(w, h){
-    let canvas = document.getElementById('stage');
+    canvas = document.getElementById('stage');
     canvas.width = w;
     canvas.height = h;
     ctx = canvas.getContext('2d');
 
     turtleImage = document.getElementById('turtle-image');
     treasureImage = document.getElementById('treasure-image');
+  },
+
+  clear(){
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   },
 
   update(model){

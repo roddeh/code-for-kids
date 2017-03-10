@@ -1,0 +1,29 @@
+let layout = `
+LWLWL00000L00
+0000W00000W00
+00LWL00000L00
+00W0000000W00
+00L0000000L00
+00W0000000W00
+00L0LWLWLWL00
+00W0W00000000
+00L0L00000000
+00W0W00000000
+00LWL00000000
+0000000000000
+000000000000)
+`
+
+export default {
+  tileSize:30,
+  layout,
+  turtle:{
+    x:0,
+    y:0,
+    orientation:1
+  },
+  treasure:{
+    x:10,
+    y:0,
+  }
+};
